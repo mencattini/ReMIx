@@ -6,7 +6,6 @@ import audioop
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from statsmodels.tsa.stattools import acf
 from scipy.ndimage.filters import gaussian_laplace
 from threading import Thread
 import threading
@@ -49,7 +48,7 @@ class Micro():
         self.inp.close()
 
 
-def main(time_seconds):
+def main(time_seconds, to_file):
     """
     Where time is the numbers of seconds!!!!
     """
@@ -90,7 +89,9 @@ def main(time_seconds):
             i += 1
             time.sleep(interval)
             print(i, "s")
-        df[400:].tofile("out.dat", sep=',')
+
+        if to_file:
+            df[400:].tofile("out.dat", sep=',')
 
         # input("Waiting input")
         # t1.do_run = False
@@ -109,9 +110,10 @@ def plotting(df):
     # plt.plot(acf(df, nlags=len(df)), label="acf(raw data)")
     # plt.grid(True)
     # plt.legend()
-
+    a = 20 * np.log10(df)
+    a[np.isinf(a)] = 0
     plt.subplot(2, 2, 2)
-    plt.plot(20 * np.log10(df), label="decibel volume")
+    plt.plot(a, label="decibel volume")
     plt.grid(True)
     plt.legend()
 
@@ -128,5 +130,5 @@ def plotting(df):
 
 
 if __name__ == '__main__':
-    df = main(10)
+    df = main(10, False)
     plotting(df)
