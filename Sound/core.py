@@ -10,6 +10,48 @@ from scipy.ndimage.filters import gaussian_laplace
 from threading import Thread
 import threading
 import pylab
+import multiprocessing
+
+
+class MyProcess(multiprocessing.Process):
+    def __init__(self, array):
+        multiprocessing.Process.__init__(self)
+        self.exit = multiprocessing.Event()
+        self.array = array
+
+    def run(self):
+        sns.set_style('darkgrid')
+        plt.ion()
+
+        while not(self.exit.is_set()):
+
+                # plt.clf()
+                # plt.plot(self.array[400:], label="raw data")
+                # plt.grid(True)
+                # plt.legend()
+                # plt.draw()
+                # pylab.waitforbuttonpress(timeout=0.01)
+
+                plt.clf()
+
+                a = 20 * np.log10(self.array)
+                a[np.isinf(a)] = 0
+                plt.subplot(2, 1, 1)
+                plt.plot(a, label="decibel volume")
+                plt.grid(True)
+                plt.legend()
+
+                plt.subplot(2, 1, 2)
+                plt.plot(gaussian_laplace(a, sigma=max(a)), label="gaussian(raw data)")
+                plt.grid(True)
+                plt.legend()
+
+                plt.draw()
+                pylab.waitforbuttonpress(timeout=0.1)
+        print("Stopped")
+
+    def shutdown(self):
+        self.exit.set()
 
 
 class Display(Thread):
@@ -74,11 +116,13 @@ def main(time_seconds, to_file):
 
         i = 0
         interval = 0.001
-        n = time_seconds / interval
-        df = np.zeros(int(n))
+        n = int(time_seconds / interval)
+        df = multiprocessing.Array('i', n)
 
         # t1 = Display(df)
         # t1.start()
+        t1 = MyProcess(df)
+        t1.start()
 
         while i < n:
             # Read data from device
@@ -93,9 +137,10 @@ def main(time_seconds, to_file):
         if to_file:
             df[400:].tofile("out.dat", sep=',')
 
-        # input("Waiting input")
+        input("Waiting input")
+        t1.shutdown()
         # t1.do_run = False
-    return df[400:]
+    return np.array(df[400:])
 
 
 def plotting(df):
