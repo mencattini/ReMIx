@@ -118,12 +118,12 @@ def plotting(df):
     plt.legend()
 
     plt.subplot(2, 2, 3)
-    plt.plot(np.fft.fft(df), label="fft(raw data)")
+    plt.plot(np.fft.fft(a), label="fft(raw data)")
     plt.grid(True)
     plt.legend()
 
     plt.subplot(2, 2, 4)
-    plt.plot(gaussian_laplace(df, sigma=max(df)), label="gaussian(raw data)")
+    plt.plot(gaussian_laplace(a, sigma=max(a)), label="gaussian(raw data)")
     plt.grid(True)
     plt.legend()
     plt.show()
