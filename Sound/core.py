@@ -7,8 +7,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.ndimage.filters import gaussian_laplace
-from threading import Thread
-import threading
 import pylab
 import multiprocessing
 
@@ -25,24 +23,12 @@ class MyProcess(multiprocessing.Process):
 
         while not(self.exit.is_set()):
 
-                # plt.clf()
-                # plt.plot(self.array[400:], label="raw data")
-                # plt.grid(True)
-                # plt.legend()
-                # plt.draw()
-                # pylab.waitforbuttonpress(timeout=0.01)
-
                 plt.clf()
 
                 a = 20 * np.log10(self.array)
                 a[np.isinf(a)] = 0
-                plt.subplot(2, 1, 1)
                 plt.plot(a, label="decibel volume")
-                plt.grid(True)
-                plt.legend()
-
-                plt.subplot(2, 1, 2)
-                plt.plot(gaussian_laplace(a, sigma=max(a)), label="gaussian(raw data)")
+                plt.plot([np.mean(a[a > 0])] * len(a), label="mean(a)", color="r")
                 plt.grid(True)
                 plt.legend()
 
@@ -52,28 +38,6 @@ class MyProcess(multiprocessing.Process):
 
     def shutdown(self):
         self.exit.set()
-
-
-class Display(Thread):
-    def __init__(self, array):
-        Thread.__init__(self)
-        self.array = array
-
-    def run(self):
-        t = threading.currentThread()
-        sns.set_style('darkgrid')
-        plt.ion()
-
-        while getattr(t, "do_run", True):
-            if len(self.array > 400):
-
-                plt.clf()
-                plt.plot(self.array[400:], label="raw data")
-                plt.grid(True)
-                plt.legend()
-                plt.draw()
-                pylab.waitforbuttonpress(timeout=0.01)
-        print("Stopped")
 
 
 class Micro():
@@ -119,8 +83,6 @@ def main(time_seconds, to_file):
         n = int(time_seconds / interval)
         df = multiprocessing.Array('i', n)
 
-        # t1 = Display(df)
-        # t1.start()
         t1 = MyProcess(df)
         t1.start()
 
@@ -139,7 +101,6 @@ def main(time_seconds, to_file):
 
         input("Waiting input")
         t1.shutdown()
-        # t1.do_run = False
     return np.array(df[400:])
 
 
@@ -151,10 +112,6 @@ def plotting(df):
     plt.grid(True)
     plt.legend()
 
-    # plt.subplot(2, 2, 2)
-    # plt.plot(acf(df, nlags=len(df)), label="acf(raw data)")
-    # plt.grid(True)
-    # plt.legend()
     a = 20 * np.log10(df)
     a[np.isinf(a)] = 0
     plt.subplot(2, 2, 2)
@@ -176,4 +133,4 @@ def plotting(df):
 
 if __name__ == '__main__':
     df = main(10, False)
-    plotting(df)
+    # plotting(df)
