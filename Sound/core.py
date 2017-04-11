@@ -42,7 +42,14 @@ class MyProcess(multiprocessing.Process):
                     res = [np.mean(res[res > 0])] * seconde_size
                     # assign it
                     mean[ele * seconde_size: (ele + 1) * seconde_size] = res
+                # get the unique mean
+                # unique_mean = mean[::seconde_size][::-1]
+                # get the index of the first non zero
+                # index = next((index for index, num in enumerate(unique_mean) if not(np.isnan(num))), None)
+                # print("index = ", index, "mean = ", unique_mean)
+                # plot the mean
                 plt.plot(mean, label="mean every seconds", color="r")
+                #  plot the current mean
                 plt.grid(True)
                 plt.legend()
 
@@ -108,7 +115,7 @@ def main(time_seconds, to_file):
                 df[i] = audioop.max(data, 2)
             i += 1
             time.sleep(interval)
-            print(i, "s")
+            # print(i, "s")
 
         if to_file:
             df[400:].tofile("out.dat", sep=',')
