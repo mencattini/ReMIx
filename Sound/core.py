@@ -12,23 +12,37 @@ import multiprocessing
 
 
 class MyProcess(multiprocessing.Process):
-    def __init__(self, array):
+    def __init__(self, array, seconde_size, total_loop):
         multiprocessing.Process.__init__(self)
         self.exit = multiprocessing.Event()
         self.array = array
+        self.seconde_size = seconde_size
+        self.total_loop = total_loop
 
     def run(self):
         sns.set_style('darkgrid')
         plt.ion()
 
+        seconde_size = int(self.seconde_size)
+        total_loop = int(self.total_loop)
+
         while not(self.exit.is_set()):
 
                 plt.clf()
-
+                # decibel part
                 a = 20 * np.log10(self.array)
                 a[np.isinf(a)] = 0
                 plt.plot(a, label="decibel volume")
-                plt.plot([np.mean(a[a > 0])] * len(a), label="mean(a)", color="r")
+                # mean parts
+                # create th vector and fill it
+                mean = np.zeros(len(a))
+                for ele in range(total_loop):
+                    # get the interval
+                    res = a[ele * seconde_size: (ele + 1) * seconde_size]
+                    res = [np.mean(res[res > 0])] * seconde_size
+                    # assign it
+                    mean[ele * seconde_size: (ele + 1) * seconde_size] = res
+                plt.plot(mean, label="mean every seconds", color="r")
                 plt.grid(True)
                 plt.legend()
 
@@ -83,7 +97,7 @@ def main(time_seconds, to_file):
         n = int(time_seconds / interval)
         df = multiprocessing.Array('i', n)
 
-        t1 = MyProcess(df)
+        t1 = MyProcess(df, 1 / interval, time_seconds)
         t1.start()
 
         while i < n:
@@ -94,7 +108,7 @@ def main(time_seconds, to_file):
                 df[i] = audioop.max(data, 2)
             i += 1
             time.sleep(interval)
-            print(i, "s")
+            # print(i, "s")
 
         if to_file:
             df[400:].tofile("out.dat", sep=',')
