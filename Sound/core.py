@@ -47,7 +47,7 @@ class MyProcess(multiprocessing.Process):
                 plt.legend()
 
                 plt.draw()
-                pylab.waitforbuttonpress(timeout=0.1)
+                pylab.waitforbuttonpress(timeout=0.5)
         print("Stopped")
 
     def shutdown(self):
@@ -108,7 +108,7 @@ def main(time_seconds, to_file):
                 df[i] = audioop.max(data, 2)
             i += 1
             time.sleep(interval)
-            # print(i, "s")
+            print(i, "s")
 
         if to_file:
             df[400:].tofile("out.dat", sep=',')
