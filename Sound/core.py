@@ -1,5 +1,8 @@
 #! /usr/bin/python3
 
+from micro import Micro
+from myprocess import MyProcess
+
 import alsaaudio
 import time
 import audioop
@@ -7,72 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.ndimage.filters import gaussian_laplace
-import pylab
 import multiprocessing
-
-
-class MyProcess(multiprocessing.Process):
-    def __init__(self, array, seconde_size, total_loop):
-        multiprocessing.Process.__init__(self)
-        self.exit = multiprocessing.Event()
-        self.array = array
-        self.seconde_size = seconde_size
-        self.total_loop = total_loop
-
-    def run(self):
-        sns.set_style('darkgrid')
-        plt.ion()
-
-        seconde_size = int(self.seconde_size)
-        total_loop = int(self.total_loop)
-
-        while not(self.exit.is_set()):
-
-                plt.clf()
-                # decibel part
-                a = 20 * np.log10(self.array)
-                a[np.isinf(a)] = 0
-                plt.plot(a, label="decibel volume")
-                # mean parts
-                # create th vector and fill it
-                mean = np.zeros(len(a))
-                for ele in range(total_loop):
-                    # get the interval
-                    res = a[ele * seconde_size: (ele + 1) * seconde_size]
-                    res = [np.mean(res[res > 0])] * seconde_size
-                    # assign it
-                    mean[ele * seconde_size: (ele + 1) * seconde_size] = res
-                # get the unique mean
-                # unique_mean = mean[::seconde_size][::-1]
-                # get the index of the first non zero
-                # index = next((index for index, num in enumerate(unique_mean) if not(np.isnan(num))), None)
-                # print("index = ", index, "mean = ", unique_mean)
-                # plot the mean
-                plt.plot(mean, label="mean every seconds", color="r")
-                #  plot the current mean
-                plt.grid(True)
-                plt.legend()
-
-                plt.draw()
-                pylab.waitforbuttonpress(timeout=0.5)
-        print("Stopped")
-
-    def shutdown(self):
-        self.exit.set()
-
-
-class Micro():
-
-    def __init__(self, alsaaudio_capture, alsaaudio_nonblock):
-        self.capture = alsaaudio_capture
-        self.nonblock = alsaaudio_nonblock
-
-    def __enter__(self):
-        self.inp = alsaaudio.PCM(self.capture, self.nonblock)
-        return self.inp
-
-    def __exit__(self, capture, nonblock, inpt):
-        self.inp.close()
 
 
 def main(time_seconds, to_file):
@@ -80,10 +18,7 @@ def main(time_seconds, to_file):
     Where time is the numbers of seconds!!!!
     """
 
-    # Open the device in nonblocking capture mode. The last argument could
-    # just as well have been zero for blocking mode. Then we could have
-    # left out the sleep call in the bottom of the loop
-    with Micro(alsaaudio.PCM_CAPTURE, alsaaudio.PCM_NONBLOCK) as inp:
+    with Micro() as inp:
 
         # Set attributes: Mono, 8000 Hz, 16 bit little endian samples
         inp.setchannels(1)
@@ -99,11 +34,15 @@ def main(time_seconds, to_file):
         # mode.
         inp.setperiodsize(160)
 
+        # i is the number of loop
         i = 0
+        # the numbers of sampling for each unity of time
         interval = 0.001
+        # the total of sampling
         n = int(time_seconds / interval)
+        # a memory shared vector
         df = multiprocessing.Array('i', n)
-
+        # create an other process to real time display
         t1 = MyProcess(df, 1 / interval, time_seconds)
         t1.start()
 
@@ -115,12 +54,12 @@ def main(time_seconds, to_file):
                 df[i] = audioop.max(data, 2)
             i += 1
             time.sleep(interval)
-            # print(i, "s")
 
         if to_file:
             df[400:].tofile("out.dat", sep=',')
 
         input("Waiting input")
+        # stop the other process
         t1.shutdown()
     return np.array(df[400:])
 
