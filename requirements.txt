@@ -26,3 +26,6 @@ six==1.10.0
 statsmodels==0.8.0
 traitlets==4.3.2
 wcwidth==0.1.7
+dlib==19.4.0
+imutils==0.4.2
+
