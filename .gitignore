@@ -1,3 +1,5 @@
 remix.sublime-project
 remix.sublime-workspace
 __pycache__
+
+*_env
