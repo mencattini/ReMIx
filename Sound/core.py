@@ -2,7 +2,7 @@
 
 from micro import Micro
 from myprocess import MyProcess
-
+from pygame import mixer
 import alsaaudio
 import time
 import audioop
@@ -13,7 +13,7 @@ from scipy.ndimage.filters import gaussian_laplace
 import multiprocessing
 
 
-def main(time_seconds, to_file):
+def main(time_seconds, to_file, file_music):
     """
     Where time is the numbers of seconds!!!!
     """
@@ -41,10 +41,20 @@ def main(time_seconds, to_file):
         # the total of sampling
         n = int(time_seconds / interval)
         # a memory shared vector
-        df = multiprocessing.Array('i', n)
+        # df = multiprocessing.Array('i', n)
+        df = np.zeros(n)
+
         # create an other process to real time display
-        t1 = MyProcess(df, 1 / interval, time_seconds)
-        t1.start()
+        # t1 = MyProcess(df, 1 / interval, time_seconds)
+        # t1.start()
+
+        # init the last mean
+        # and the music
+        last_mean = 1
+        mixer.init()
+        mixer.music.load(file_music)
+        mixer.music.set_volume(0.6)
+        mixer.music.play()
 
         while i < n:
             # Read data from device
@@ -55,12 +65,37 @@ def main(time_seconds, to_file):
             i += 1
             time.sleep(interval)
 
+            # update the music every half of second
+            if (i % 500 == 0):
+
+                # change data to decibel
+                a = 20 * np.log10(df)
+                a[np.isinf(a)] = 0
+                # try to do the mean
+                try:
+                    mean = np.mean(a[a > 0][-500:])
+                except IndexError:
+                    mean = 1
+
+                # compute the ratio
+                ratio = mean / last_mean
+                # to avoid the first ratio which is mean/1
+                if last_mean == 1:
+                    ratio = 1
+                last_mean = mean
+                # set the new volume
+                mixer.music.set_volume(mixer.music.get_volume() * (1 + 10 * (1 - ratio)))
+                print("ratio = ", (1 + 10 * (1 - ratio)))
+
+        mixer.music.stop()
+        mixer.quit()
+
         if to_file:
             df[400:].tofile("out.dat", sep=',')
 
         input("Waiting input")
         # stop the other process
-        t1.shutdown()
+        # t1.shutdown()
     return np.array(df[400:])
 
 
@@ -92,5 +127,5 @@ def plotting(df):
 
 
 if __name__ == '__main__':
-    df = main(10, False)
+    df = main(10, False, "/home/romain/Musique/Casseurs Flowters - Comment C'est Loin/05 - En Boucle.mp3")
     # plotting(df)

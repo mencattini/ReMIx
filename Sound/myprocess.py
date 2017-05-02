@@ -20,7 +20,7 @@ class MyProcess(multiprocessing.Process):
         self.seconde_size = seconde_size
         self.total_loop = total_loop
 
-    def run(self):
+    def old_run(self):
         # some plotting consideration
         sns.set_style('darkgrid')
         plt.ion()
