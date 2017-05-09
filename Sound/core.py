@@ -1,7 +1,6 @@
 #! /usr/bin/python3
 
 from micro import Micro
-from myprocess import MyProcess
 from pygame import mixer
 import alsaaudio
 import time
@@ -10,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.ndimage.filters import gaussian_laplace
-import multiprocessing
+import sys
 
 
 def main(time_seconds, to_file, file_music):
@@ -127,5 +126,7 @@ def plotting(df):
 
 
 if __name__ == '__main__':
-    df = main(10, False, "/home/romain/Musique/Casseurs Flowters - Comment C'est Loin/05 - En Boucle.mp3")
-    # plotting(df)
+    if len(sys.argv) > 1:
+        df = main(sys.argv[1], False, sys.argv[0])
+    else:
+        df = main(60, False, "/home/romain/Musique/Casseurs Flowters - Comment C'est Loin/05 - En Boucle.mp3")
