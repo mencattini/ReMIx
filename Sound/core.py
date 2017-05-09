@@ -127,6 +127,6 @@ def plotting(df):
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
-        df = main(sys.argv[1], False, sys.argv[0])
+        df = main(int(sys.argv[1]), False, sys.argv[0])
     else:
         df = main(60, False, "/home/romain/Musique/Casseurs Flowters - Comment C'est Loin/05 - En Boucle.mp3")
