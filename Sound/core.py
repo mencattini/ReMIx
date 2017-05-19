@@ -126,7 +126,7 @@ def plotting(df):
     a = 20 * np.log10(df)
     a[np.isinf(a)] = 0
     plt.subplot(2, 2, 2)
-    plt.plot(a, label="decibel volume")
+    plt.plot(a, label="decibel volume")``
     plt.grid(True)
     plt.legend()
 
@@ -148,5 +148,5 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         sound = Sound(int(sys.argv[2], False, sys.argv[1]), shared_value)
     else:
-        sound = Sound(60, False, "./05 - En Boucle.mp3", shared_value)
+        sound = Sound(60, False, "./music.mp3", shared_value)
     sound.run()
