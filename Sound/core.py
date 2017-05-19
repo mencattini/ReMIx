@@ -10,92 +10,109 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy.ndimage.filters import gaussian_laplace
 import sys
+import multiprocessing
 
 
-def main(time_seconds, to_file, file_music):
-    """
-    Where time is the numbers of seconds!!!!
-    """
+class Sound(multiprocessing.Process):
 
-    with Micro() as inp:
+    def __init__(self, time_seconds, to_file, file_music, shared_value):
+        multiprocessing.Process.__init__(self)
+        self.exit = multiprocessing.Event()
+        self.time_seconds = time_seconds
+        self.to_file = to_file
+        self.file_music = file_music
+        self.shared_value = shared_value
 
-        # Set attributes: Mono, 8000 Hz, 16 bit little endian samples
-        inp.setchannels(1)
-        inp.setrate(8000)
-        inp.setformat(alsaaudio.PCM_FORMAT_S16_LE)
+    def run(self):
+        """
+        Where time is the numbers of seconds!!!!
+        """
 
-        # The period size controls the internal number of frames per period.
-        # The significance of this parameter is documented in the ALSA api.
-        # For our purposes, it is suficcient to know that reads from the device
-        # will return this many frames. Each frame being 2 bytes long.
-        # This means that the reads below will return either 320 bytes of data
-        # or 0 bytes of data. The latter is possible because we are in nonblocking
-        # mode.
-        inp.setperiodsize(160)
+        with Micro() as inp:
 
-        # i is the number of loop
-        i = 0
-        # the numbers of sampling for each unity of time
-        interval = 0.001
-        # the total of sampling
-        n = int(time_seconds / interval)
-        # a memory shared vector
-        # df = multiprocessing.Array('i', n)
-        df = np.zeros(n)
+            # Set attributes: Mono, 8000 Hz, 16 bit little endian samples
+            inp.setchannels(1)
+            inp.setrate(8000)
+            inp.setformat(alsaaudio.PCM_FORMAT_S16_LE)
 
-        # create an other process to real time display
-        # t1 = MyProcess(df, 1 / interval, time_seconds)
-        # t1.start()
+            # The period size controls the internal number of frames per
+            # period. The significance of this parameter is documented in the
+            # ALSA api.For our purposes, it is suficcient to know that reads
+            # from the device will return this many frames. Each frame being 2
+            # bytes long. This means that the reads below will return either
+            # 320 bytes of data or 0 bytes of data. The latter is possible
+            # because we are in nonblocking mode.
+            inp.setperiodsize(160)
 
-        # init the last mean
-        # and the music
-        last_mean = 1
-        mixer.init()
-        mixer.music.load(file_music)
-        mixer.music.set_volume(0.6)
-        mixer.music.play()
+            # i is the number of loop
+            i = 0
+            # the numbers of sampling for each unity of time
+            interval = 0.001
+            # the total of sampling
+            n = int(self.time_seconds / interval)
+            # a memory shared vector
+            # df = multiprocessing.Array('i', n)
+            df = np.zeros(n)
 
-        while i < n:
-            # Read data from device
-            l, data = inp.read()
-            if l:
-                # Return the maximumof the absolute value of all samples in a fragment.
-                df[i] = audioop.max(data, 2)
-            i += 1
-            time.sleep(interval)
+            # create an other process to real time display
+            # t1 = MyProcess(df, 1 / interval, time_seconds)
+            # t1.start()
 
-            # update the music every half of second
-            if (i % 500 == 0):
+            # init the last mean
+            # and the music
+            last_mean = 1
+            mixer.init()
+            mixer.music.load(self.file_music)
+            mixer.music.set_volume(0.6)
+            mixer.music.play()
 
-                # change data to decibel
-                a = 20 * np.log10(df)
-                a[np.isinf(a)] = 0
-                # try to do the mean
-                try:
-                    mean = np.mean(a[a > 0][-500:])
-                except IndexError:
-                    mean = 1
+            while i < n:
+                # Read data from device
+                l, data = inp.read()
+                if l:
+                    # Return the maximumof the absolute value of all samples
+                    # in a fragment.
+                    df[i] = audioop.max(data, 2)
+                i += 1
+                time.sleep(interval)
 
-                # compute the ratio
-                ratio = mean / last_mean
-                # to avoid the first ratio which is mean/1
-                if last_mean == 1:
-                    ratio = 1
-                last_mean = mean
-                # set the new volume
-                mixer.music.set_volume(mixer.music.get_volume() * (1 + 10 * (1 - ratio)))
-                print("ratio = ", (1 + 10 * (1 - ratio)))
+                # update the music every half of second
+                if (i % 500 == 0):
 
-        mixer.music.stop()
-        mixer.quit()
+                    # change data to decibel
+                    a = 20 * np.log10(df)
+                    a[np.isinf(a)] = 0
+                    # try to do the mean
+                    try:
+                        mean = np.mean(a[a > 0][-500:])
+                    except IndexError:
+                        mean = 1
 
-        if to_file:
-            df[400:].tofile("out.dat", sep=',')
+                    # compute the ratio
+                    ratio = mean / last_mean
+                    # to avoid the first ratio which is mean/1
+                    if last_mean == 1:
+                        ratio = 1
+                    last_mean = mean
+                    # set the new volume
+                    mixer.music.set_volume(
+                        mixer.music.get_volume() * (1 + 10 * (1 - ratio))
+                        )
+                    print("ratio = ", (1 + 10 * (1 - ratio)))
 
-        input("Waiting input")
-        # stop the other process
-        # t1.shutdown()
-    return np.array(df[400:])
+            mixer.music.stop()
+            mixer.quit()
+
+            if self.to_file:
+                df[400:].tofile("out.dat", sep=',')
+
+            # stop the other process
+            # t1.shutdown()
+        return np.array(df[400:])
+
+        def shutdown(self):
+            # way to be notified when the process needs to stop
+            self.exit.set()
 
 
 def plotting(df):
@@ -126,7 +143,10 @@ def plotting(df):
 
 
 if __name__ == '__main__':
+
+    shared_value = multiprocessing.Value('d', 0.0)
     if len(sys.argv) > 1:
-        df = main(int(sys.argv[2]), False, sys.argv[1])
+        sound = Sound(int(sys.argv[2], False, sys.argv[1]), shared_value)
     else:
-        df = main(60, False, "/home/romain/Musique/Casseurs Flowters - Comment C'est Loin/05 - En Boucle.mp3")
+        sound = Sound(60, False, "./05 - En Boucle.mp3", shared_value)
+    sound.run()
