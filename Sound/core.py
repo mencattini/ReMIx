@@ -1,6 +1,6 @@
 #! /usr/bin/python3
 
-from micro import Micro
+from Sound.micro import Micro
 from pygame import mixer
 import alsaaudio
 import time

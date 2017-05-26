@@ -9,7 +9,7 @@ from imutils import face_utils
 
 from sklearn.externals import joblib
 # from sklearn.svm import SVC
-from featuregen import features_from_shape
+from Video.featuregen import features_from_shape
 # pylint: disable = E1101
 
 # Emotion list
