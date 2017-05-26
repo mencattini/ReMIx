@@ -126,7 +126,7 @@ def plotting(df):
     a = 20 * np.log10(df)
     a[np.isinf(a)] = 0
     plt.subplot(2, 2, 2)
-    plt.plot(a, label="decibel volume")``
+    plt.plot(a, label="decibel volume")
     plt.grid(True)
     plt.legend()
 
