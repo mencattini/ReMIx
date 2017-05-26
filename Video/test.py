@@ -32,7 +32,7 @@ if __name__ == '__main__':
     # initialize the video stream and allow the cammera sensor to warmup
     print("[INFO] camera sensor warming up...")
 
-    VIDEOSTREAM = VideoStream(framerate=4).start()
+    VIDEOSTREAM = VideoStream().start()
     time.sleep(2.0)
 
     EMOTION = 0

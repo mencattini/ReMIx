@@ -35,6 +35,7 @@ def find_ratio(points):
     return ratio
 
 
+# pylint: disable = R0914
 def generate_features(landmark_coords):
     ''' Function to generate features '''
 

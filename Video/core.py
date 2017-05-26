@@ -1,0 +1,80 @@
+"""Main entry point for video stream."""
+import multiprocessing
+
+import cv2
+import dlib
+import imutils
+from imutils.video import VideoStream
+from imutils import face_utils
+
+from sklearn.externals import joblib
+# from sklearn.svm import SVC
+from featuregen import features_from_shape
+# pylint: disable = E1101
+
+# Emotion list
+EMOTIONS = ["anger",
+            "disgust",
+            "fear",
+            "happy",
+            "neutral",
+            "sadness",
+            "surprise"]
+
+
+class VideoEmotion(multiprocessing.Process):
+    """Simple process to extract facial emotion."""
+    def __init__(self, shared_value):
+        multiprocessing.Process.__init__(self)
+        self.shared = shared_value
+        self.detector = dlib.get_frontal_face_detector()
+        self.predictor = dlib.shape_predictor(
+            "shape_predictor_68_face_landmarks.dat")
+        self.classifier = joblib.load('classifier.pkl')
+        self.video_stream = VideoStream().start()
+        self.emotion = 4
+
+    def run(self):
+        """Exec the process to identify the emotion in real time."""
+        while True:
+            frame = self.video_stream.read()
+            frame = imutils.resize(frame, width=400)
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            # detect faces in the grayscale frame
+            rects = self.detector(gray, 0)
+
+            # loop over the face detections
+            for rect in rects:
+                shape = self.predictor(gray, rect)
+                vector = features_from_shape(shape)
+                self.emotion = self.classifier.predict([vector])[0]
+
+                shape = face_utils.shape_to_np(shape)
+                # loop over the (x, y)-coordinates for the facial landmarks
+                # and draw them on the image
+                for (cor_x, cor_y) in shape:
+                    cv2.circle(frame, (cor_x, cor_y), 1, (0, 0, 255), -1)
+            self.shared.value = self.shared.value/4+3/4*self.emotion
+            # show the frame
+            cv2.putText(frame,
+                        EMOTIONS[self.emotion],
+                        (5, 20), cv2.FONT_HERSHEY_SIMPLEX, 1, 255)
+
+            cv2.imshow("Frame", frame)
+
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord("q"):
+                break
+        # do a bit of cleanup
+        cv2.destroyAllWindows()
+        self.video_stream.stop()
+
+    def shutdown(self):
+        """way to be notified when the process needs to stop"""
+        self.exit.set()
+
+
+if __name__ == "__main__":
+    SH_VALUE = multiprocessing.Value('d', 4.0)
+    VIDEO = VideoEmotion(shared_value=SH_VALUE)
+    VIDEO.run()
