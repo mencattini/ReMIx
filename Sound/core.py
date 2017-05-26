@@ -6,22 +6,19 @@ import alsaaudio
 import time
 import audioop
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-from scipy.ndimage.filters import gaussian_laplace
 import sys
 import multiprocessing
 
 
 class Sound(multiprocessing.Process):
 
-    def __init__(self, time_seconds, to_file, file_music, shared_value):
+    def __init__(self, time_seconds, file_music, shared_value, exit):
         multiprocessing.Process.__init__(self)
         self.exit = multiprocessing.Event()
         self.time_seconds = time_seconds
-        self.to_file = to_file
         self.file_music = file_music
         self.shared_value = shared_value
+        self.video_exit = exit
 
     def run(self):
         """
@@ -99,54 +96,17 @@ class Sound(multiprocessing.Process):
                         mixer.music.get_volume() * (1 + 10 * (1 - ratio))
                         )
                     print("ratio = ", (1 + 10 * (1 - ratio)))
-
+            self.video_exit.set()
             mixer.music.stop()
             mixer.quit()
-
-            if self.to_file:
-                df[400:].tofile("out.dat", sep=',')
-
-            # stop the other process
-            # t1.shutdown()
-        return np.array(df[400:])
-
-        def shutdown(self):
-            # way to be notified when the process needs to stop
             self.exit.set()
-
-
-def plotting(df):
-
-    sns.set_style('darkgrid')
-    plt.subplot(2, 2, 1)
-    plt.plot(df, label="raw data")
-    plt.grid(True)
-    plt.legend()
-
-    a = 20 * np.log10(df)
-    a[np.isinf(a)] = 0
-    plt.subplot(2, 2, 2)
-    plt.plot(a, label="decibel volume")
-    plt.grid(True)
-    plt.legend()
-
-    plt.subplot(2, 2, 3)
-    plt.plot(np.fft.fft(a), label="fft(raw data)")
-    plt.grid(True)
-    plt.legend()
-
-    plt.subplot(2, 2, 4)
-    plt.plot(gaussian_laplace(a, sigma=max(a)), label="gaussian(raw data)")
-    plt.grid(True)
-    plt.legend()
-    plt.show()
 
 
 if __name__ == '__main__':
 
     shared_value = multiprocessing.Value('d', 0.0)
     if len(sys.argv) > 1:
-        sound = Sound(int(sys.argv[2], False, sys.argv[1]), shared_value)
+        sound = Sound(int(sys.argv[2], sys.argv[1]), shared_value)
     else:
-        sound = Sound(60, False, "./music.mp3", shared_value)
+        sound = Sound(60, "./music.mp3", shared_value)
     sound.run()

@@ -1,10 +1,11 @@
-from Sound.core import Sound
-from Video.core import VideoStream
+"""Main project entry point."""
 import multiprocessing
 import argparse
+from Sound.core import Sound
+from Video.core import VideoEmotion
 
 
-def parsing():
+def __parsing__():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -19,10 +20,13 @@ def parsing():
         default="./Video/classifier.pkl"
         )
 
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 
 if __name__ == '__main__':
     shared_value = multiprocessing.Value('d', 4.0)
-    args = parsing()
+    args = __parsing__()
+    video = VideoEmotion(args.training, shared_value)
+    sound = Sound(args.time, args.music, shared_value, video.exit)
+    video.start()
+    sound.start()
