@@ -24,19 +24,20 @@ EMOTIONS = ["anger",
 
 class VideoEmotion(multiprocessing.Process):
     """Simple process to extract facial emotion."""
-    def __init__(self, shared_value):
+    def __init__(self, classifier, shared_value):
         multiprocessing.Process.__init__(self)
         self.shared = shared_value
         self.detector = dlib.get_frontal_face_detector()
         self.predictor = dlib.shape_predictor(
-            "shape_predictor_68_face_landmarks.dat")
-        self.classifier = joblib.load('classifier.pkl')
-        self.video_stream = VideoStream().start()
+            "Video/shape_predictor_68_face_landmarks.dat")
+        self.classifier = joblib.load(classifier)
         self.emotion = 4
+        self.exit = multiprocessing.Event()
 
     def run(self):
         """Exec the process to identify the emotion in real time."""
-        while True:
+        self.video_stream = VideoStream().start()
+        while not self.exit.is_set():
             frame = self.video_stream.read()
             frame = imutils.resize(frame, width=400)
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -76,5 +77,5 @@ class VideoEmotion(multiprocessing.Process):
 
 if __name__ == "__main__":
     SH_VALUE = multiprocessing.Value('d', 4.0)
-    VIDEO = VideoEmotion(shared_value=SH_VALUE)
+    VIDEO = VideoEmotion(classifier="classifier.pkl", shared_value=SH_VALUE)
     VIDEO.run()
