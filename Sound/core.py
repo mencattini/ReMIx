@@ -1,30 +1,32 @@
-#! /usr/bin/python3
-
+"""Core sound script."""
+import sys
+import time
+import multiprocessing
 from Sound.micro import Micro
 from pygame import mixer
 import alsaaudio
-import time
 import audioop
 import numpy as np
-import sys
-import multiprocessing
 
 
+# pylint: disable=E1101
 class Sound(multiprocessing.Process):
+    """Sound process."""
 
-    def __init__(self, time_seconds, file_music, shared_value, exit):
+    def __init__(self, time_seconds, file_music, shared_value, video_exit):
+        """Initialize class."""
         multiprocessing.Process.__init__(self)
         self.exit = multiprocessing.Event()
         self.time_seconds = time_seconds
         self.file_music = file_music
         self.shared_value = shared_value
-        self.video_exit = exit
+        self.video_exit = video_exit
 
     def run(self):
-        """
+        """Execute the process.
+
         Where time is the numbers of seconds!!!!
         """
-
         with Micro() as inp:
 
             # Set attributes: Mono, 8000 Hz, 16 bit little endian samples
@@ -46,10 +48,10 @@ class Sound(multiprocessing.Process):
             # the numbers of sampling for each unity of time
             interval = 0.001
             # the total of sampling
-            n = int(self.time_seconds / interval)
+            n_intervals = int(self.time_seconds / interval)
             # a memory shared vector
             # df = multiprocessing.Array('i', n)
-            df = np.zeros(n)
+            df = np.zeros(n_intervals)
 
             # create an other process to real time display
             # t1 = MyProcess(df, 1 / interval, time_seconds)
@@ -63,7 +65,7 @@ class Sound(multiprocessing.Process):
             mixer.music.set_volume(0.6)
             mixer.music.play()
 
-            while i < n:
+            while i < n_intervals:
                 # Read data from device
                 l, data = inp.read()
                 if l:
@@ -74,7 +76,7 @@ class Sound(multiprocessing.Process):
                 time.sleep(interval)
 
                 # update the music every half of second
-                if (i % 500 == 0):
+                if i % 500 == 0:
 
                     # change data to decibel
                     a = 20 * np.log10(df)
@@ -103,10 +105,9 @@ class Sound(multiprocessing.Process):
 
 
 if __name__ == '__main__':
-
-    shared_value = multiprocessing.Value('d', 0.0)
+    SHARED_VALUE = multiprocessing.Value('d', 0.0)
     if len(sys.argv) > 1:
-        sound = Sound(int(sys.argv[2], sys.argv[1]), shared_value)
+        SOUND = Sound(int(sys.argv[2]), sys.argv[1], SHARED_VALUE, None)
     else:
-        sound = Sound(60, "./music.mp3", shared_value)
-    sound.run()
+        SOUND = Sound(60, "./music.mp3", SHARED_VALUE, None)
+    SOUND.run()

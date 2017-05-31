@@ -24,9 +24,9 @@ def __parsing__():
 
 
 if __name__ == '__main__':
-    shared_value = multiprocessing.Value('d', 4.0)
-    args = __parsing__()
-    video = VideoEmotion(args.training, shared_value)
-    sound = Sound(args.time, args.music, shared_value, video.exit)
-    video.start()
-    sound.start()
+    SHARED_VALUE = multiprocessing.Value('d', 4.0)
+    ARGS = __parsing__()
+    VIDEO = VideoEmotion(ARGS.training, SHARED_VALUE)
+    SOUND = Sound(ARGS.time, ARGS.music, SHARED_VALUE, VIDEO.exit)
+    VIDEO.start()
+    SOUND.start()

@@ -24,7 +24,9 @@ EMOTIONS = ["anger",
 
 class VideoEmotion(multiprocessing.Process):
     """Simple process to extract facial emotion."""
+
     def __init__(self, classifier, shared_value):
+        """Initialize class."""
         multiprocessing.Process.__init__(self)
         self.shared = shared_value
         self.detector = dlib.get_frontal_face_detector()
@@ -32,36 +34,47 @@ class VideoEmotion(multiprocessing.Process):
             "Video/shape_predictor_68_face_landmarks.dat")
         self.classifier = joblib.load(classifier)
         self.emotion = 4
+        self.video_stream = None
         self.exit = multiprocessing.Event()
 
     def run(self):
         """Exec the process to identify the emotion in real time."""
         self.video_stream = VideoStream().start()
+        frames = []
+        n_frames = 30
         while not self.exit.is_set():
             frame = self.video_stream.read()
             frame = imutils.resize(frame, width=400)
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            # detect faces in the grayscale frame
-            rects = self.detector(gray, 0)
+            frames.append(gray)
+            if len(frames) == n_frames:
+                gray = cv2.addWeighted(
+                    frames[0], 1 / n_frames, frames[1], 1 / n_frames, 0)
+                for i in range(2, n_frames):
+                    gray = cv2.addWeighted(
+                        gray, i / n_frames, frames[i], 1 / n_frames, 0)
+                frames = []
+                # detect faces in the grayscale frame
+                rects = self.detector(gray, 0)
 
-            # loop over the face detections
-            for rect in rects:
-                shape = self.predictor(gray, rect)
-                vector = features_from_shape(shape)
-                self.emotion = self.classifier.predict([vector])[0]
+                # loop over the face detections
+                for rect in rects:
+                    shape = self.predictor(gray, rect)
+                    vector = features_from_shape(shape)
+                    self.emotion = self.classifier.predict([vector])[0]
 
-                shape = face_utils.shape_to_np(shape)
-                # loop over the (x, y)-coordinates for the facial landmarks
-                # and draw them on the image
-                for (cor_x, cor_y) in shape:
-                    cv2.circle(frame, (cor_x, cor_y), 1, (0, 0, 255), -1)
-            self.shared.value = self.shared.value/4+3/4*self.emotion
-            # show the frame
-            cv2.putText(frame,
-                        EMOTIONS[self.emotion],
-                        (5, 20), cv2.FONT_HERSHEY_SIMPLEX, 1, 255)
+                    shape = face_utils.shape_to_np(shape)
+                    # loop over the (x, y)-coordinates for the facial landmarks
+                    # and draw them on the image
+                    for (cor_x, cor_y) in shape:
+                        cv2.circle(frame, (cor_x, cor_y), 1, (0, 0, 255), -1)
+                self.shared.value = self.emotion
+                # show the frame
+                cv2.putText(frame,
+                            EMOTIONS[self.emotion],
+                            (5, 20), cv2.FONT_HERSHEY_SIMPLEX, 1, 255)
 
-            cv2.imshow("Frame", frame)
+                cv2.imshow("Frame", frame)
 
             key = cv2.waitKey(1) & 0xFF
             if key == ord("q"):
@@ -71,7 +84,7 @@ class VideoEmotion(multiprocessing.Process):
         self.video_stream.stop()
 
     def shutdown(self):
-        """way to be notified when the process needs to stop"""
+        """Way to be notified when the process needs to stop."""
         self.exit.set()
 
 

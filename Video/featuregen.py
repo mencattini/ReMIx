@@ -5,7 +5,7 @@ import numpy
 
 
 def features_from_shape(shape):
-    ''' return features from shape. '''
+    """Return features from shape."""
     landmarks = []
     for i in range(68):
         landmarks.append(shape.part(i).x)
@@ -18,8 +18,7 @@ def features_from_shape(shape):
 
 
 def find_ratio(points):
-    ''' Function to find ratios '''
-
+    """Find landmark ratios."""
     x_coor = [0] * 4
     y_coor = [0] * 4
     for i in range(4):
@@ -37,8 +36,7 @@ def find_ratio(points):
 
 # pylint: disable = R0914
 def generate_features(landmark_coords):
-    ''' Function to generate features '''
-
+    """Generate features from landmarks."""
     key_points = [18, 22, 23, 27, 37, 40, 43, 46, 28, 32,
                   34, 36, 5, 9, 13, 49, 55, 52, 58, 61, 63, 65, 67]
     combinations = itertools.combinations(key_points, 4)
