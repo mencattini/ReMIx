@@ -1,0 +1,11 @@
+--- # configuration
+duration: 120
+classifier: Video/classifier.pkl
+music:
+  neutral: Music/motivation.mp3
+  sadness: Music/motivation.mp3
+  fear: Music/motivation.mp3
+  anger: Music/motivation.mp3
+  happy: Music/motivation.mp3
+  surprise: Music/motivation.mp3
+  disgust: Music/motivation.mp3
