@@ -2,6 +2,7 @@
 import sys
 import time
 import multiprocessing
+from collections import Counter
 from pygame import mixer
 import alsaaudio
 import audioop
@@ -9,17 +10,23 @@ import numpy as np
 from Sound.micro import Micro
 from Video.constants import EMOTIONS
 
-# pylint: disable=E1101
+
+MIN_COUNTER = 20
+
+
+# pylint: disable=E1101, R0913, R0914, R0915
 class Sound(multiprocessing.Process):
     """Sound process."""
 
-    def __init__(self, time_seconds, file_music, shared_value, video_exit):
+    def __init__(self, time_seconds, file_music, shared_value, flag,
+                 video_exit):
         """Initialize class."""
         multiprocessing.Process.__init__(self)
         self.exit = multiprocessing.Event()
         self.time_seconds = time_seconds
         self.file_music = file_music
         self.shared = shared_value
+        self.flag = flag
         self.video_exit = video_exit
 
     def run(self):
@@ -51,7 +58,7 @@ class Sound(multiprocessing.Process):
             n_intervals = int(self.time_seconds / interval)
             # a memory shared vector
             # df = multiprocessing.Array('i', n)
-            df = np.zeros(n_intervals)
+            deltaf = np.zeros(n_intervals)
 
             # create an other process to real time display
             # t1 = MyProcess(df, 1 / interval, time_seconds)
@@ -61,35 +68,57 @@ class Sound(multiprocessing.Process):
             # and the music
             last_mean = 1
             mixer.init()
-            mixer.music.load(self.file_music['neutral'])
-            mixer.music.set_volume(0.6)
+            mixer.music.load(self.file_music[EMOTIONS[4]])
+            # mixer.music.set_volume(1.0)
             mixer.music.play()
-            old_value = self.shared.value
+            time.sleep(1.0)
+            print('play')
+            current_value = 4
+            emotion = []
+            counter = 0
             while i < n_intervals:
                 # Read data from device
-                l, data = inp.read()
-                if l:
+                flag, data = inp.read()
+                if flag:
                     # Return the maximumof the absolute value of all samples
                     # in a fragment.
-                    df[i] = audioop.max(data, 2)
+                    deltaf[i] = audioop.max(data, 2)
                 i += 1
                 time.sleep(interval)
-                if old_value != self.shared.value:
-                    old_value = self.shared.value
-                    volume = mixer.music.get_volume()
-                    mixer.music.stop()
-                    mixer.music.load(self.file_music[EMOTIONS[old_value]])
-                    mixer.music.set_volume(volume)
-                    mixer.music.play()
+                if self.flag.value:
+                    print("Emotion: {}".format(EMOTIONS[self.shared.value]))
+                    self.flag.value = False
+                    counter += 1
+                    emotion.append(self.shared.value)
+                    if counter == MIN_COUNTER:
+                        counter = Counter(emotion)
+                        new_emotion = counter.most_common()[0][0]
+                        emotion = []
+                        counter = 0
+                        print("Avarage emotion: {}".format(
+                            EMOTIONS[new_emotion]))
+                        if new_emotion != current_value:
+                            print("Change music: {} -> {}".format(
+                                EMOTIONS[current_value],
+                                EMOTIONS[new_emotion]))
+                            old_value = self.shared.value
+                            current_value = old_value
+                            counter = 0
+                            volume = mixer.music.get_volume()
+                            mixer.music.fadeout(300)
+                            mixer.music.load(
+                                self.file_music[EMOTIONS[old_value]])
+                            mixer.music.set_volume(volume)
+                            mixer.music.play()
                 # update the music every half of second
                 if i % 500 == 0:
 
                     # change data to decibel
-                    a = 20 * np.log10(df)
-                    a[np.isinf(a)] = 0
+                    array = 20 * np.log10(deltaf)
+                    array[np.isinf(array)] = 0
                     # try to do the mean
                     try:
-                        mean = np.mean(a[a > 0][-500:])
+                        mean = np.mean(array[array > 0][-500:])
                     except IndexError:
                         mean = 1
 
@@ -112,8 +141,10 @@ class Sound(multiprocessing.Process):
 
 if __name__ == '__main__':
     SHARED_VALUE = multiprocessing.Value('d', 0.0)
+    FLAG_VALUE = multiprocessing.Value('b', False)
     if len(sys.argv) > 1:
-        SOUND = Sound(int(sys.argv[2]), sys.argv[1], SHARED_VALUE, None)
+        SOUND = Sound(int(sys.argv[2]), sys.argv[1], SHARED_VALUE,
+                      FLAG_VALUE, None)
     else:
-        SOUND = Sound(60, "./music.mp3", SHARED_VALUE, None)
+        SOUND = Sound(60, "./music.mp3", SHARED_VALUE, FLAG_VALUE, None)
     SOUND.run()

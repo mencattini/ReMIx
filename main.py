@@ -22,8 +22,9 @@ if __name__ == '__main__':
     with open(ARGS.config) as config_file:
         CONFIG = yaml.load(config_file)
         SHARED_VALUE = multiprocessing.Value('i', 4)
-        VIDEO = VideoEmotion(CONFIG['classifier'], SHARED_VALUE)
+        FLAG_VALUE = multiprocessing.Value('b', False)
+        VIDEO = VideoEmotion(CONFIG['classifier'], SHARED_VALUE, FLAG_VALUE)
         SOUND = Sound(CONFIG['duration'], CONFIG['music'], SHARED_VALUE,
-                      VIDEO.exit)
+                      FLAG_VALUE, VIDEO.exit)
         VIDEO.start()
         SOUND.start()

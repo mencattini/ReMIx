@@ -11,7 +11,7 @@ from sklearn.externals import joblib
 # from sklearn.svm import SVC
 
 from featuregen import features_from_shape
-
+# pylint: disable=E1101
 
 if __name__ == '__main__':
     # emotion list
@@ -64,7 +64,7 @@ if __name__ == '__main__':
         # show the frame
         cv2.putText(FRAME,
                     EMOTIONS[EMOTION],
-                    (5,20), cv2.FONT_HERSHEY_SIMPLEX, 1, 255)
+                    (5, 20), cv2.FONT_HERSHEY_SIMPLEX, 1, 255)
 
         cv2.imshow("Frame", FRAME)
 

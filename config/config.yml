@@ -2,10 +2,10 @@
 duration: 120
 classifier: Video/classifier.pkl
 music:
-  neutral: Music/motivation.mp3
-  sadness: Music/motivation.mp3
-  fear: Music/motivation.mp3
-  anger: Music/motivation.mp3
-  happy: Music/motivation.mp3
-  surprise: Music/motivation.mp3
-  disgust: Music/motivation.mp3
+  neutral: Music/Instrumentel.mp3
+  sadness: Music/Winds_Caress.mp3
+  fear: Music/Trouillos.mp3
+  anger: Music/Storm.mp3
+  happy: Music/Chinese_Umbrellas_Ragtime.mp3
+  disgust: Music/Motivation.mp3
+  surprise: Music/Rise.mp3

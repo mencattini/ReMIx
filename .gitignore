@@ -3,3 +3,5 @@ remix.sublime-workspace
 __pycache__
 
 *_env
+
+__test__.py

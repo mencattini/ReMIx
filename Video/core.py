@@ -10,17 +10,18 @@ from imutils import face_utils
 from sklearn.externals import joblib
 # from sklearn.svm import SVC
 from Video.featuregen import features_from_shape
-# pylint: disable = E1101
+# pylint: disable = E1101, R0902
 from Video.constants import EMOTIONS
 
 
 class VideoEmotion(multiprocessing.Process):
     """Simple process to extract facial emotion."""
 
-    def __init__(self, classifier, shared_value):
+    def __init__(self, classifier, shared_value, flag):
         """Initialize class."""
         multiprocessing.Process.__init__(self)
         self.shared = shared_value
+        self.flag = flag
         self.detector = dlib.get_frontal_face_detector()
         self.predictor = dlib.shape_predictor(
             "Video/shape_predictor_68_face_landmarks.dat")
@@ -33,19 +34,20 @@ class VideoEmotion(multiprocessing.Process):
         """Exec the process to identify the emotion in real time."""
         self.video_stream = VideoStream().start()
         frames = []
-        n_frames = 30
+        n_frames = 100
         while not self.exit.is_set():
             frame = self.video_stream.read()
             frame = imutils.resize(frame, width=400)
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            frames.append(gray)
+            # gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            frames.append(frame)
             if len(frames) == n_frames:
-                gray = cv2.addWeighted(
-                    frames[0], 1 / n_frames, frames[1], 1 / n_frames, 0)
+                super_frame = cv2.addWeighted(
+                    frames[0], 0.5, frames[1], 0.5, 0)
                 for i in range(2, n_frames):
-                    gray = cv2.addWeighted(
-                        gray, i / n_frames, frames[i], 1 / n_frames, 0)
+                    super_frame = cv2.addWeighted(
+                        super_frame, 0.5, frames[i], 0.5, 0)
                 frames = []
+                gray = cv2.cvtColor(super_frame, cv2.COLOR_BGR2GRAY)
                 # detect faces in the grayscale frame
                 rects = self.detector(gray, 0)
 
@@ -59,14 +61,17 @@ class VideoEmotion(multiprocessing.Process):
                     # loop over the (x, y)-coordinates for the facial landmarks
                     # and draw them on the image
                     for (cor_x, cor_y) in shape:
-                        cv2.circle(frame, (cor_x, cor_y), 1, (0, 0, 255), -1)
+                        cv2.circle(super_frame,
+                                   (cor_x, cor_y), 1, (0, 0, 255), -1)
                 self.shared.value = self.emotion
+                self.flag.value = True
+
                 # show the frame
-                cv2.putText(frame,
+                cv2.putText(super_frame,
                             EMOTIONS[self.emotion],
                             (5, 20), cv2.FONT_HERSHEY_SIMPLEX, 1, 255)
 
-                cv2.imshow("Frame", frame)
+                cv2.imshow("Frame", super_frame)
 
             key = cv2.waitKey(1) & 0xFF
             if key == ord("q"):
@@ -82,5 +87,7 @@ class VideoEmotion(multiprocessing.Process):
 
 if __name__ == "__main__":
     SH_VALUE = multiprocessing.Value('d', 4.0)
-    VIDEO = VideoEmotion(classifier="classifier.pkl", shared_value=SH_VALUE)
+    FLAG_VALUE = multiprocessing.Value('b', 4.0)
+    VIDEO = VideoEmotion(classifier="classifier.pkl",
+                         shared_value=SH_VALUE, flag=FLAG_VALUE)
     VIDEO.run()
