@@ -11,15 +11,7 @@ from sklearn.externals import joblib
 # from sklearn.svm import SVC
 from Video.featuregen import features_from_shape
 # pylint: disable = E1101
-
-# Emotion list
-EMOTIONS = ["anger",
-            "disgust",
-            "fear",
-            "happy",
-            "neutral",
-            "sadness",
-            "surprise"]
+from Video.constants import EMOTIONS
 
 
 class VideoEmotion(multiprocessing.Process):

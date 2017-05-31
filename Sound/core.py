@@ -2,12 +2,12 @@
 import sys
 import time
 import multiprocessing
-from Sound.micro import Micro
 from pygame import mixer
 import alsaaudio
 import audioop
 import numpy as np
-
+from Sound.micro import Micro
+from Video.constants import EMOTIONS
 
 # pylint: disable=E1101
 class Sound(multiprocessing.Process):
@@ -19,7 +19,7 @@ class Sound(multiprocessing.Process):
         self.exit = multiprocessing.Event()
         self.time_seconds = time_seconds
         self.file_music = file_music
-        self.shared_value = shared_value
+        self.shared = shared_value
         self.video_exit = video_exit
 
     def run(self):
@@ -61,10 +61,10 @@ class Sound(multiprocessing.Process):
             # and the music
             last_mean = 1
             mixer.init()
-            mixer.music.load(self.file_music)
+            mixer.music.load(self.file_music['neutral'])
             mixer.music.set_volume(0.6)
             mixer.music.play()
-
+            old_value = self.shared.value
             while i < n_intervals:
                 # Read data from device
                 l, data = inp.read()
@@ -74,7 +74,13 @@ class Sound(multiprocessing.Process):
                     df[i] = audioop.max(data, 2)
                 i += 1
                 time.sleep(interval)
-
+                if old_value != self.shared.value:
+                    old_value = self.shared.value
+                    volume = mixer.music.get_volume()
+                    mixer.music.stop()
+                    mixer.music.load(self.file_music[EMOTIONS[old_value]])
+                    mixer.music.set_volume(volume)
+                    mixer.music.play()
                 # update the music every half of second
                 if i % 500 == 0:
 
