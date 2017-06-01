@@ -9,13 +9,14 @@ import alsaaudio
 import audioop
 import numpy as np
 from Sound.micro import Micro
+from Sound.fader import Fader
 from Video.constants import EMOTIONS
 
 
-MIN_COUNTER = 20
+MIN_COUNTER = 15
 
 
-# pylint: disable=E1101, R0913, R0914, R0915
+# pylint: disable=E1101, R0913, R0914, R0915, C0200
 class Sound(multiprocessing.Process):
     """Sound process."""
 
@@ -26,6 +27,7 @@ class Sound(multiprocessing.Process):
         self.exit = multiprocessing.Event()
         self.time_seconds = time_seconds
         self.file_music = file_music
+        self.sounds = []
         self.shared = shared_value
         self.flag = flag
         self.video_exit = video_exit
@@ -69,10 +71,14 @@ class Sound(multiprocessing.Process):
             # and the music
             last_mean = 1
             mixer.init()
-            mixer.music.load(self.file_music[EMOTIONS[4]])
-            mixer.music.set_volume(1.0)
-            mixer.music.play()
-            time.sleep(1.0)
+            for i in range(len(EMOTIONS)):
+                self.sounds.append(Fader(self.file_music[EMOTIONS[i]]))
+                self.sounds[-1].set_volume(0)
+                self.sounds[-1].play()
+
+            volume = 1.0
+            self.sounds[4].set_volume(1)
+
             print('play')
             current_value = 4
             emotion = []
@@ -102,15 +108,12 @@ class Sound(multiprocessing.Process):
                             print("Change music: {} -> {}".format(
                                 EMOTIONS[current_value],
                                 EMOTIONS[new_emotion]))
+                            self.sounds[current_value].fade_to(0)
                             old_value = self.shared.value
                             current_value = old_value
+                            self.sounds[current_value].fade_to(volume)
                             counter = 0
-                            volume = mixer.music.get_volume()
-                            mixer.music.fadeout(300)
-                            mixer.music.load(
-                                self.file_music[EMOTIONS[old_value]])
-                            mixer.music.set_volume(volume)
-                            mixer.music.play()
+
                 # update the music every half of second
                 if i % 500 == 0:
 
@@ -130,9 +133,9 @@ class Sound(multiprocessing.Process):
                         ratio = 1
                     last_mean = mean
                     # set the new volume
-                    mixer.music.set_volume(
-                        mixer.music.get_volume() * (1 + 10 * (1 - ratio))
-                        )
+                    volume *= (1 + 10 * (1 - ratio))
+                    self.sounds[current_value].set_volume(volume)
+                    Fader.update()
                     print("ratio = ", (1 + 10 * (1 - ratio)))
             self.video_exit.set()
             mixer.music.stop()
