@@ -70,7 +70,7 @@ class Sound(multiprocessing.Process):
             last_mean = 1
             mixer.init()
             mixer.music.load(self.file_music[EMOTIONS[4]])
-            # mixer.music.set_volume(1.0)
+            mixer.music.set_volume(1.0)
             mixer.music.play()
             time.sleep(1.0)
             print('play')
