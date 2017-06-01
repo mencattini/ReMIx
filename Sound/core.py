@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """Core sound script."""
 import sys
 import time
