@@ -13,6 +13,15 @@ from Video.featuregen import features_from_shape
 # pylint: disable = E1101, R0902
 from Video.constants import EMOTIONS
 
+# Emotion list
+EMOTIONS = ["anger",
+            "disgust",
+            "fear",
+            "happy",
+            "neutral",
+            "sadness",
+            "surprise"]
+
 
 class VideoEmotion(multiprocessing.Process):
     """Simple process to extract facial emotion."""
@@ -72,7 +81,6 @@ class VideoEmotion(multiprocessing.Process):
                             (5, 20), cv2.FONT_HERSHEY_SIMPLEX, 1, 255)
 
                 cv2.imshow("Frame", super_frame)
-
             key = cv2.waitKey(1) & 0xFF
             if key == ord("q"):
                 break

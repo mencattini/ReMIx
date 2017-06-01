@@ -1,8 +1,10 @@
+<<<<<<< HEAD
 """Core sound script."""
 import sys
 import time
 import multiprocessing
 from collections import Counter
+
 from pygame import mixer
 import alsaaudio
 import audioop
