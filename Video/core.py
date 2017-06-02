@@ -6,6 +6,7 @@ import dlib
 import imutils
 from imutils.video import VideoStream
 from imutils import face_utils
+import numpy as np
 
 from sklearn.externals import joblib
 # from sklearn.svm import SVC
@@ -26,11 +27,12 @@ EMOTIONS = ["anger",
 class VideoEmotion(multiprocessing.Process):
     """Simple process to extract facial emotion."""
 
-    def __init__(self, classifier, shared_value, flag):
+    def __init__(self, classifier, shared_value, flag, demo=False):
         """Initialize class."""
         multiprocessing.Process.__init__(self)
         self.shared = shared_value
         self.flag = flag
+        self.demo = demo
         self.detector = dlib.get_frontal_face_detector()
         self.predictor = dlib.shape_predictor(
             "Video/shape_predictor_68_face_landmarks.dat")
@@ -72,7 +74,11 @@ class VideoEmotion(multiprocessing.Process):
                     for (cor_x, cor_y) in shape:
                         cv2.circle(super_frame,
                                    (cor_x, cor_y), 1, (0, 0, 255), -1)
-                self.shared.value = self.emotion
+                if self.demo:
+                    if np.random.rand() > 0.8:
+                        self.shared.value = np.random.randint(0, len(EMOTIONS))
+                else:
+                    self.shared.value = self.emotion
                 self.flag.value = True
 
                 # show the frame
@@ -81,9 +87,6 @@ class VideoEmotion(multiprocessing.Process):
                             (5, 20), cv2.FONT_HERSHEY_SIMPLEX, 1, 255)
 
                 cv2.imshow("Frame", super_frame)
-            key = cv2.waitKey(1) & 0xFF
-            if key == ord("q"):
-                break
         # do a bit of cleanup
         cv2.destroyAllWindows()
         self.video_stream.stop()

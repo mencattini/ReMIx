@@ -23,8 +23,9 @@ if __name__ == '__main__':
         CONFIG = yaml.load(config_file)
         SHARED_VALUE = multiprocessing.Value('i', 4)
         FLAG_VALUE = multiprocessing.Value('b', False)
-        VIDEO = VideoEmotion(CONFIG['classifier'], SHARED_VALUE, FLAG_VALUE)
+        VIDEO = VideoEmotion(CONFIG['classifier'], SHARED_VALUE, FLAG_VALUE,
+                             CONFIG['demo'])
         SOUND = Sound(CONFIG['duration'], CONFIG['music'], SHARED_VALUE,
-                      FLAG_VALUE, VIDEO.exit)
+                      FLAG_VALUE, VIDEO.exit, CONFIG['demo'])
         VIDEO.start()
         SOUND.start()

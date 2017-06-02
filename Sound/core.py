@@ -16,12 +16,12 @@ from Video.constants import EMOTIONS
 MIN_COUNTER = 15
 
 
-# pylint: disable=E1101, R0913, R0914, R0915, C0200
+# pylint: disable=E1101, R0913, R0914, R0915, C0200, R0912, R0902
 class Sound(multiprocessing.Process):
     """Sound process."""
 
     def __init__(self, time_seconds, file_music, shared_value, flag,
-                 video_exit):
+                 video_exit, demo=False):
         """Initialize class."""
         multiprocessing.Process.__init__(self)
         self.exit = multiprocessing.Event()
@@ -31,6 +31,7 @@ class Sound(multiprocessing.Process):
         self.shared = shared_value
         self.flag = flag
         self.video_exit = video_exit
+        self.demo = demo
 
     def run(self):
         """Execute the process.
@@ -102,7 +103,7 @@ class Sound(multiprocessing.Process):
                         new_emotion = counter.most_common()[0][0]
                         emotion = []
                         counter = 0
-                        print("Avarage emotion: {}".format(
+                        print("\033[0;32mAvarage emotion: {}\033[0m".format(
                             EMOTIONS[new_emotion]))
                         if new_emotion != current_value:
                             print("Change music: {} -> {}".format(
@@ -125,12 +126,17 @@ class Sound(multiprocessing.Process):
                         mean = np.mean(array[array > 0][-500:])
                     except IndexError:
                         mean = 1
-
-                    # compute the ratio
-                    ratio = mean / last_mean
-                    # to avoid the first ratio which is mean/1
-                    if last_mean == 1:
-                        ratio = 1
+                    if self.demo:
+                        if np.random.random() < 0.5:
+                            ratio = 1 + np.abs(np.random.normal(0, 0.01))
+                        else:
+                            ratio = 1 - np.abs(np.random.normal(0, 0.01))
+                    else:
+                        # compute the ratio
+                        ratio = mean / last_mean
+                        # to avoid the first ratio which is mean/1
+                        if last_mean == 1:
+                            ratio = 1
                     last_mean = mean
                     # set the new volume
                     volume *= (1 + 10 * (1 - ratio))
