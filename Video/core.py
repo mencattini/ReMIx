@@ -87,6 +87,7 @@ class VideoEmotion(multiprocessing.Process):
                             (5, 20), cv2.FONT_HERSHEY_SIMPLEX, 1, 255)
 
                 cv2.imshow("Frame", super_frame)
+
         # do a bit of cleanup
         cv2.destroyAllWindows()
         self.video_stream.stop()

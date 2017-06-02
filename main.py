@@ -18,7 +18,7 @@ def __parsing__():
 
 if __name__ == '__main__':
     ARGS = __parsing__()
-
+    print("\n"*100)
     with open(ARGS.config) as config_file:
         CONFIG = yaml.load(config_file)
         SHARED_VALUE = multiprocessing.Value('i', 4)

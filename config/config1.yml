@@ -1,0 +1,12 @@
+--- # configuration
+duration: 60
+classifier: Video/classifier.pkl
+demo: false
+music:
+  neutral: Music/Instrumentel.ogg
+  sadness: Music/Winds_Caress.ogg
+  fear: Music/Trouillos.ogg
+  anger: Music/Storm.ogg
+  happy: Music/Chinese_Umbrellas_Ragtime.ogg
+  disgust: Music/Instrumentel.ogg
+  surprise: Music/Rise.ogg
